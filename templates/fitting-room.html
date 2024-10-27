@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oxy_gen - Fitting Room</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #fff;
+        }
+
+        /* Кнопка в углу */
+        .back-button {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            background-color: hsl(203, 95%, 80%);
+            color: rgb(0, 0, 0);
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 20px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .back-button:hover {
+            background-color: #6cbaed;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 1000px;
+            margin-top: 20px;
+        }
+
+        .title {
+            font-size: 50px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .block {
+            width: 256px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-right: 20px;
+            text-align: center;
+        }
+
+        .block img {
+            max-width: 100%;
+            height: 100%;
+        }
+
+        .upload-area {
+            width: 256px;
+            height: 363px;
+            background-color: #f9f9f9;
+            border: 1px dashed #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .upload-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: none;
+        }
+
+        .result-box {
+            width: 320px;
+            height: 430px;
+            background-color: #d3d3d3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .result-box img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .bottom-text {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .generate-button {
+            background-color: hsl(203, 95%, 80%);
+            color: rgb(0, 0, 0);
+            padding: 15px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            margin-top: 20px;
+        }
+
+        .generate-button:hover {
+            background-color: #6cbaed;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Кнопка в верхнем левом углу -->
+    <a href="/" class="back-button">На главную</a>
+
+    <h1 class="title">OxyGen</h1>
+
+    <div class="container">
+        <!-- First block for the jacket image -->
+        <div class="block">
+            <h3>Худи Sportsolo</h3>
+            <img src="https://a.lmcdn.ru/product/M/P/MP002XM0BXD2_25176685_1_v1.jpg" alt="Худи унисекс">
+        </div>
+
+        <!-- Second block for user photo upload -->
+        <div class="block">
+            <h3>Ваше фото</h3>
+            <div class="upload-area" id="uploadArea">
+                <input type="file" id="uploadImage" accept="image/*" style="position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
+                <img id="userImage" src="">
+                <p>Загрузите фото</p>
+            </div>
+            <p class="bottom-text">Вставьте фото человека, на которого хотите примерить одежду (желательно в полный рост)</p>
+        </div>
+
+        <!-- Third block for the result -->
+        <div class="result-box" id="resultBox">
+            <p>Загрузка результата занимает 30-40 секунд с момента нажатия на кнопку 'Генерировать'</p>
+        </div>
+    </div>
+
+    <button class="generate-button" id="generateButton">Генерировать</button>
+
+    <script>
+    // Handle image upload
+    document.getElementById('uploadImage').addEventListener('change', function(event) {
+        const userImage = document.getElementById('userImage');
+        const file = event.target.files[0];
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                userImage.src = e.target.result;
+                userImage.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Handle "Generate" button click
+    document.getElementById('generateButton').addEventListener('click', function() {
+        const userImage = document.getElementById('userImage');
+        const resultBox = document.getElementById('resultBox');
+
+        // Check if user has uploaded an image
+        if (userImage.src) {
+            const formData = new FormData();
+            const file = document.getElementById('uploadImage').files[0];
+            formData.append('image', file);
+
+            console.log("Sending image to server...");
+
+            fetch('/generate', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Log the received data for debugging
+                console.log("Data received:", data);
+
+                // Check if the expected result image URL exists
+                if (data.result_image) {
+                    resultBox.innerHTML = `<img src="${data.result_image}" alt="Generated Image">`;
+                } else {
+                    resultBox.innerHTML = `<p>Error: Result image not found in response.</p>`;
+                    console.error('Error: No result_image in response:', data);
+                }
+            })
+            .catch(error => {
+                // Log any errors encountered during fetch
+                console.error('Error during fetch operation:', error);
+                resultBox.innerHTML = `<p>Error occurred. See console for details.</p>`;
+            });
+        } else {
+            alert('Please upload an image first.');
+        }
+    });
+</script>
+
