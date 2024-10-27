@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, make_response
 from werkzeug.utils import secure_filename
 import os
 from fal import process_images
@@ -9,9 +9,15 @@ os.environ["FAL_KEY"] = "0d4ed3c0-67bb-4bf4-8b36-1ca35973a266:6cc73bf649d3d4842f
 
 app = Flask(__name__)
 
+
 @app.route('/')
+@app.route("/")
 def home():
-    return render_template('index.html')
+    # Рендерим вашу основную страницу
+    response = make_response(render_template("index.html"))  # Замените "index.html" на ваш основной HTML-файл
+    # Устанавливаем заголовок для пропуска предупреждения ngrok
+    response.headers["ngrok-skip-browser-warning"] = "true"
+    return response
 
 @app.route('/fit')
 def fit():
